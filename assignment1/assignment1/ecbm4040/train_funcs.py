@@ -23,16 +23,23 @@ def train(model,  X_train, y_train, X_valid, y_valid,
     print('number of batches for training: {}'.format(num_batch))
     train_acc_hist = []
     val_acc_hist = []
+    # randOrder = np.random.choice(num_train, replace = False)
+    bestAcc = 0
+    prevAcc = 0
+    maxIncreaseCount = 2
+    valIncreaseCount = 0
     for e in range(num_epoch):
         # Train stage
+        randOrder = np.random.permutation(num_train)
         for i in range(num_batch):
             ## Order selection
+            selection = randOrder[i*batch_size:(i+1)*batch_size]
             X_batch = X_train[i*batch_size:(i+1)*batch_size]
             y_batch = y_train[i*batch_size:(i+1)*batch_size]
             ## Random selection
-            #sample_idxs = np.random.choice(num_train, batch_size)
-            #X_batch = X_train[sample_idxs,:]
-            #y_batch = y_train[sample_idxs]
+            # sample_idxs = np.random.choice(num_train, batch_size)
+            X_batch = X_train[selection,:]
+            y_batch = y_train[selection]
             ## loss
             loss = model.loss(X_batch, y_batch)
             # update model
@@ -51,6 +58,23 @@ def train(model,  X_train, y_train, X_valid, y_valid,
         # Shrink learning_rate
         learning_rate *= learning_decay
         print('epoch {}: valid acc = {}, new learning rate = {}'.format(e+1, val_acc, learning_rate))
+        if str(type(model)) != "<class 'ecbm4040.classifiers.mlp.MLP'>":
+            if bestAcc > val_acc:
+                valIncreaseCount += 1
+                print('Validation acc has not improved for {} turns'.format(valIncreaseCount))
+            else:
+                valIncreaseCount = 0
+            if bestAcc < val_acc:
+                bestAcc = val_acc
+                model.save_model()
+                print('\n'*2)
+                print('Best accuracy of {} found. Saving model'.format(val_acc))
+                print('\n'*2)
+            # print('\n\n\n\ncurr increase count {}\n\n\n\n'.format(valIncreaseCount))
+            if valIncreaseCount == maxIncreaseCount:
+                print('\n\n Early stopping because of validation loss increase')
+                return train_acc_hist, val_acc_hist
+        prevAcc = val_acc
         
     # Return Loss history
     return train_acc_hist, val_acc_hist

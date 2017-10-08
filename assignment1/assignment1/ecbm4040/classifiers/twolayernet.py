@@ -29,6 +29,7 @@ class TwoLayerNet(object):
         """
         self.layer1 = DenseLayer(input_dim, hidden_dim, weight_scale=weight_scale)
         self.layer2 = AffineLayer(hidden_dim, num_classes, weight_scale=weight_scale)
+        self.velocityList = None# hacky way to hold onto running aggregation of velocities
         self.reg = reg
 
     def loss(self, X, y):
@@ -67,7 +68,7 @@ class TwoLayerNet(object):
         ###################################################
         #              END OF YOUR CODE                   #
         ###################################################
- 
+
 
 
 
@@ -90,7 +91,7 @@ class TwoLayerNet(object):
         loss += 0.5*self.reg*square_weights
         return loss
 
-    def step(self, learning_rate=1e-5):
+    def step(self, learning_rate=1e-5, velocityLR = 0.9):
         """
         Use SGD to implement a single-step update to each weight and bias.
         """
@@ -98,10 +99,35 @@ class TwoLayerNet(object):
         layer1, layer2 = self.layer1, self.layer2
         params = layer1.params + layer2.params
         grads = layer1.gradients + layer2.gradients
+
+
+
+
+        if self.velocityList is None:
+            # print('waddup')
+            self.velocityList = []
+            for idx in range(0, len(params)):
+                self.velocityList.append(np.zeros(grads[idx].shape))
+
         
         # Add L2 regularization
         reg = self.reg
         grads = [grad + reg*params[i] for i, grad in enumerate(grads)]
+
+
+
+
+        for idx in range(0, len(params)):
+            self.velocityList[idx] = velocityLR * self.velocityList[idx] - grads[idx]*learning_rate
+            # if idx == 0:
+            #     print(np.sum(self.velocityList[idx]))
+            # # print(self.velocityList[idx])
+            #     print('*'*100)
+        # 1/0
+
+
+
+
         ###################################################
         #TODO: Use SGD or SGD with momentum to update     #
         #variables in layer1 and layer2                   #
@@ -110,7 +136,10 @@ class TwoLayerNet(object):
         # print(len(grads))
         # 1/0
         for idx in range(0, len(params)):
-            params[idx] = params[idx] - grads[idx]*learning_rate
+            # print(grads[idx].shape)
+            params[idx] = params[idx] + self.velocityList[idx]
+            # params[idx] = params[idx] - grads[idx]*learning_rate
+        # 2/0
         # self.layer1.affine_backward(grads)
         # self.layer2.backward(grads)    
         

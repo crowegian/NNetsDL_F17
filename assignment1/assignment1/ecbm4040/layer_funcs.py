@@ -145,8 +145,12 @@ def softmax_loss(x, y):
     #############################################################################
 
     sm = np.exp(x - np.max(x, keepdims = True, axis = 1))#np.reshape(np.max(x, axis=1), (x.shape[0], 1)))# stability should be fine here
-    temp = np.exp(x - np.max(x, keepdims = True, axis = 1))
-    myMin = np.min(x - np.max(x, keepdims = True, axis = 1))
+
+
+
+
+    # temp = np.exp(x - np.max(x, keepdims = True, axis = 1))
+    # myMin = np.min(x - np.max(x, keepdims = True, axis = 1))
     # # print(x)
     # # print(np.max(x, keepdims = True))
     # i = 0
@@ -171,11 +175,19 @@ def softmax_loss(x, y):
     # print(sm.shape)
     # print(temp)
     # print(temp.shape)
-    sm = sm/np.sum(sm, axis=1, keepdims=True)
+
+    sm = sm/np.sum(sm, axis=1, keepdims=True) # this is the old sm we were using
+
+    # print(sm.shape)
+    # print(sm[np.arange(N), y].shape)
+    # print(np.log(np.sum(sm, axis=1, keepdims=False)).shape)
+    # sm = -(np.log(sm) - np.log(np.sum(sm, axis=1, keepdims=True))) # -(np.log(sm[np.arange(N), y]) - np.log(np.sum(sm, axis=1, keepdims=False)))
+    # print(sm.shape)
+    # 1/0
     # temp = np.log(sm[np.arange(N), y])
     # print(temp.shape)
     # tempNan = np.any(np.isnan(sm))
-    tempZero = np.any(temp == 0)
+    # tempZero = np.any(temp == 0)
     # print('zer0 {}'.format(tempZero))
     # print(myMin)
     # if tempZero:
@@ -189,7 +201,12 @@ def softmax_loss(x, y):
     N = x.shape[0]
     # print(N)
     # print(np.log(sm[np.arange(N), y]))
-    loss = -np.sum(np.log(sm[np.arange(N), y]))/N
+
+    loss = np.sum(sm[np.arange(N), y])/N
+    # print(sm[np.arange(N), y])
+    # print("loss {}".format(loss))
+    # loss = -np.sum(np.log(sm[np.arange(N), y]))/N
+    
     dx = sm
     dx[np.arange(N), y] = dx[np.arange(N), y] - 1
     dx = dx/N

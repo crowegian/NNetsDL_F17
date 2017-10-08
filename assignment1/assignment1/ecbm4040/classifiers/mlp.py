@@ -26,10 +26,12 @@ class MLP(object):
         
         dims = [input_dim] + hidden_dims
         layers = []
+        # print('all Dims {}'.format(dims))
         for i in range(len(dims)-1):
+            # print('curr dim: {}\n next dim {}'.format(dims[i], dims[i+1]))
             layers.append(DenseLayer(input_dim=dims[i], output_dim=dims[i+1], weight_scale=weight_scale))
         layers.append(AffineLayer(input_dim=dims[-1], output_dim=num_classes, weight_scale=weight_scale))
-        
+        # 1/0
         self.layers = layers
 
     def loss(self, X, y):
@@ -50,9 +52,14 @@ class MLP(object):
         ###################################################
         #TODO: Feedforward                                #
         ###################################################
-        h = X# this will hold intermediate values
+        hPrev = X# this will hold intermediate values
+        hNext = X
+        h = X
         for layer in layers:
+            # print(h.shape)
             h = layer.feedforward(h)# update h to new input for next layer
+            # hNext = layer.feedforward(hPrev)# update h to new input for next layer
+            # hNext = hPrev
             # print('layer shape {}'.format(layer.params[0].shape))
         loss, dX = softmax_loss(h, y)
         
