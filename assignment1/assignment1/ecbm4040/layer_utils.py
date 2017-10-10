@@ -90,7 +90,14 @@ class DenseLayer(FullyConnectedLayer):
         #TODO: derive the gradients wst to X, W, b. Use# 
         #layer_funcs.py                                #
         ################################################
-        dX, dW, db = affine_backward(dout, X, W, b)
+        da = relu_backward(dout, A)
+        # print(A.shape)
+        # print(A)
+        # 1/0
+        dX, dW, db = affine_backward(da, X, W, b)
+        # dX = relu_backward(dX, X)
+        # dW = relu_backward(dW, W)
+        # db = relu_backward(db, b)
         # dX = relu_backward(dout, dX)
         # dW = relu_backward(dout, dW)
         # db = relu_backward(dout, db)
@@ -165,7 +172,6 @@ class AffineLayer(FullyConnectedLayer):
         """
         W, b = self.params
         X = self.X
-        
         dX = np.zeros_like(X)
         dW = np.zeros_like(W)
         db = np.zeros_like(b)
@@ -173,7 +179,9 @@ class AffineLayer(FullyConnectedLayer):
         #TODO: derive the gradients wst to X, W, b. Use# 
         #layer_funcs.py                                #
         ################################################
+        # dout_relu = relu_backward(dout, X)
         dX, dW, db = affine_backward(dout, X, W, b)
+        # dX = relu_backward(dX, X)
         
         ################################################
         #              END OF YOUR CODE                #

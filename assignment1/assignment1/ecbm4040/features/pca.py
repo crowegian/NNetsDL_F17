@@ -22,7 +22,7 @@ def pca_naive(X, K):
     #TODO: Implement PCA by extracting eigenvector#
     ###############################################
     # X = X_patch
-    X = (X - np.mean(X, axis = 0))/ np.std(X, axis = 0)
+    X = (X - np.mean(X, axis = 0))/ np.std(X, axis = 0)# standardizing the matrix. Subtract mean and divide by std
     cov = np.cov(X.T)
     T, P = np.linalg.eig(cov)
     sortedOrder = np.argsort(T)[::-1]

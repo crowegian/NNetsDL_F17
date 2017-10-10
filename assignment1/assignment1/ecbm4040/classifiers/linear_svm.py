@@ -48,6 +48,11 @@ def svm_loss_naive(W, X, y, reg):
 
     return loss, dW
 
+
+
+
+
+
 def svm_loss_vectorized(W, X, y, reg):
     """
     Linear SVM loss function, vectorized implementation.
@@ -73,6 +78,7 @@ def svm_loss_vectorized(W, X, y, reg):
     loss = loss/X.shape[0]
 
     loss += reg * np.sum(W * W)
+
         
     #############################################################################
     # TODO:                                                                     #

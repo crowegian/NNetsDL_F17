@@ -62,6 +62,7 @@ def affine_backward(dout, x, w, b):
     dx = np.dot(dout, w.T).reshape(x.shape)
     dw = np.dot(x.T, dout)
     db = np.sum(dout, axis=0)
+
     # print('dx shape {}'.format(dx.shape))
     # print('dw shape {}'.format(dw.shape))
     # print('db shape {}'.format(db.shape))
@@ -86,8 +87,9 @@ def relu_forward(x):
     # TODO: Implement the ReLU forward pass.                                  #
     ###########################################################################
     # mask = x < 0
-    out = x # consider copying here if you get unexplained issues
-    out[x < 0] = 0
+    out = np.array(x, copy=True)
+    # consider copying here if you get unexplained issues
+    out[x <= 0] = 0
 
     
     ###########################################################################
@@ -110,11 +112,11 @@ def relu_backward(dout, x):
     # TODO: Implement the ReLU backward pass.                                 #
     ###########################################################################
 
-
     # D = np.prod(x.shape[1:])# multiply all dimensions from the second dimension 
     # onwards to get D
     # x = np.reshape(x, (x.shape[0], D))
-    dx = dout # consider copying here if you get unexplained issues
+    dx = np.array(dout, copy=True)
+    # consider copying here if you get unexplained issues
     # print(x[0] < 0)
     dx[x <= 0] = 0 # the <= is key because there are zero values which you want
     # to catch
@@ -146,87 +148,30 @@ def softmax_loss(x, y):
 
     # sm = np.exp(x - np.max(x, keepdims = True, axis = 1))#np.reshape(np.max(x, axis=1), (x.shape[0], 1)))# stability should be fine here
     sm = x - np.max(x, keepdims = True, axis = 1)
-    # sm = x
-    # sm = x
 
-
-
-    # temp = np.exp(x - np.max(x, keepdims = True, axis = 1))
-    # myMin = np.min(x - np.max(x, keepdims = True, axis = 1))
-    # # print(x)
-    # # print(np.max(x, keepdims = True))
-    # i = 0
-    # print('*'*100)
-    # print(x[i,:])
-    # print(myMax[i])
-    # print(myMax.shape)
-    # print(x.shape)
-    # print('*'*100)
-    # print(temp[i,:])
-    # print('*'*100)
-    # print(x)
-    # 1/0
-
-    # 1/0
-    # sm = sm/np.sum(sm, axis=1, keepdims=True)
-    # tempNan = np.any(np.isnan(sm))
-    # tempZero = np.any(sm == 0)
     N = x.shape[0]
-    # tempSumZero = np.any(np.sum(sm, axis=1, keepdims=True) == 0)
-    # print(sm)
-    # print(sm.shape)
-    # print(temp)
-    # print(temp.shape)
 
-    # sm = sm/np.sum(sm, axis=1, keepdims=True) # this is the old sm we were using
-    # print(sm.shape)
+
+
     sm = -sm + np.log(np.sum(np.exp(sm), axis=1, keepdims=True))
-    # print(sm.shape)
-    # 1/0
 
-    # print(sm.shape)
-    # print(sm[np.arange(N), y].shape)
-    # print(np.log(np.sum(sm, axis=1, keepdims=False)).shape)
-    # sm = -(np.log(sm) - np.log(np.sum(sm, axis=1, keepdims=True))) # -(np.log(sm[np.arange(N), y]) - np.log(np.sum(sm, axis=1, keepdims=False)))
-    # print(sm.shape)
-    # 1/0
-    # temp = np.log(sm[np.arange(N), y])
-    # print(temp.shape)
-    # tempNan = np.any(np.isnan(sm))
-    # tempZero = np.any(temp == 0)
-    # print('zer0 {}'.format(tempZero))
-    # print(myMin)
-    # if tempZero:
-        # print(temp)
-        # sm[sm == 0] = .0000001
-    # # tempSumZero = np.any(np.sum(sm, axis=1, keepdims=True) == 0)
-    # print('nan {}'.format(tempNan))
-    # print('sum {}'.format(tempSumZero))
-    # Warning: Our problem is that we're getting zeros for the maximum class and taking the log of this
-    # 1/0
     N = x.shape[0]
-    # print(N)
-    # print(np.log(sm[np.arange(N), y]))
+
 
     loss = np.sum(sm[np.arange(N), y])/N
-    # print(sm[np.arange(N), y])
-    # print("loss {}".format(loss))
-    # loss = -np.sum(np.log(sm[np.arange(N), y]))/N
 
 
 
-    # print(x.shape)
+
     dx =  x - np.max(x, keepdims = True, axis = 1)
-    # 1/0
     dx = np.exp(dx)
     scoresDenom = np.sum(dx, axis = 1, keepdims=True) # sum of scores along observations
 
     dx = ((dx)/scoresDenom)
-    # print(dW.shape)
-    # 1/0
+
     dx[np.arange(0,N), y] = dx[np.arange(0,N), y] - 1
     dx = dx/N
-    # print(dx.shape)
+
 
 
 
