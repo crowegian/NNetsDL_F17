@@ -144,8 +144,10 @@ def softmax_loss(x, y):
     # TODO: You can use the previous softmax loss function here.                #
     #############################################################################
 
-    sm = np.exp(x - np.max(x, keepdims = True, axis = 1))#np.reshape(np.max(x, axis=1), (x.shape[0], 1)))# stability should be fine here
-
+    # sm = np.exp(x - np.max(x, keepdims = True, axis = 1))#np.reshape(np.max(x, axis=1), (x.shape[0], 1)))# stability should be fine here
+    sm = x - np.max(x, keepdims = True, axis = 1)
+    # sm = x
+    # sm = x
 
 
 
@@ -176,7 +178,11 @@ def softmax_loss(x, y):
     # print(temp)
     # print(temp.shape)
 
-    sm = sm/np.sum(sm, axis=1, keepdims=True) # this is the old sm we were using
+    # sm = sm/np.sum(sm, axis=1, keepdims=True) # this is the old sm we were using
+    # print(sm.shape)
+    sm = -sm + np.log(np.sum(np.exp(sm), axis=1, keepdims=True))
+    # print(sm.shape)
+    # 1/0
 
     # print(sm.shape)
     # print(sm[np.arange(N), y].shape)
@@ -206,10 +212,30 @@ def softmax_loss(x, y):
     # print(sm[np.arange(N), y])
     # print("loss {}".format(loss))
     # loss = -np.sum(np.log(sm[np.arange(N), y]))/N
-    
-    dx = sm
-    dx[np.arange(N), y] = dx[np.arange(N), y] - 1
+
+
+
+    # print(x.shape)
+    dx =  x - np.max(x, keepdims = True, axis = 1)
+    # 1/0
+    dx = np.exp(dx)
+    scoresDenom = np.sum(dx, axis = 1, keepdims=True) # sum of scores along observations
+
+    dx = ((dx)/scoresDenom)
+    # print(dW.shape)
+    # 1/0
+    dx[np.arange(0,N), y] = dx[np.arange(0,N), y] - 1
     dx = dx/N
+    # print(dx.shape)
+
+
+
+
+    # dx = x - np.max(x, keepdims = True, axis = 1)
+    # # dx = 
+    # dx = sm
+    # dx[np.arange(N), y] = dx[np.arange(N), y] - 1
+    # dx = dx/N
     #############################################################################
     #                          END OF YOUR CODE                                 #
     #############################################################################
