@@ -143,14 +143,23 @@ class SGDmomentumOptim(Optimizer):
         :param learning_rate: (float)
         """
         momentum = self.momentum
-        velocitys = self.velocitys
+        velocitys = self.velocitys# dictionary
         # get all parameters and their gradients
         params = model.params
         grads = model.grads
         ###################################################
         # TODO: SGD + Momentum, Update params and velocitys#
+        # print("velocity keys: {}".format(velocitys.keys()))
+        # print("param keys: {}".format(params.keys()))
+        # print("grads keys: {}".format(grads.keys()))
+        for paramKey in velocitys.keys():
+            velocitys[paramKey] = momentum*velocitys[paramKey] - learning_rate*grads[paramKey]
+            params[paramKey] = params[paramKey] + velocitys[paramKey]
+            # estimate gradient 
+            # update velocity
+            # update parameters
         ###################################################
-        raise NotImplementedError
+        # raise NotImplementedError
 
 
 class RMSpropOptim(Optimizer):
@@ -161,6 +170,7 @@ class RMSpropOptim(Optimizer):
         :param gamma: (float) suggest to be 0.9
         :param eps: (float) a small number
         """
+        # eps = 1e-1
         self.gamma = gamma
         self.eps = eps
         cache = dict()
@@ -180,13 +190,29 @@ class RMSpropOptim(Optimizer):
         gamma = self.gamma
         eps = self.eps
         cache = self.cache
+        # decayRate = learning_rate # why is this named differently?
+
+        # I'm renaming all of these because the names are different compared to
+        # what is used in the book. Renaming them according to what the general consensus on values is
+        decayRate = gamma# should be arounf 0.9.
+        gamma = eps# should be a very small number like 1e-6
+        eps = learning_rate
 
         # create two new dictionaries containing all parameters and their gradients
         params, grads = model.params, model.grads
+        # print("cache keys: {}".format(cache.keys()))
+        # print("param keys: {}".format(params.keys()))
+        # print("grads keys: {}".format(grads.keys()))
         ###################################################
         # TODO: RMSprop, Update params and cache           #
+        for paramKey in cache.keys():
+            # print("{} mean is {}".format(paramKey, params[paramKey].mean()))
+            sqrdGrad = decayRate*cache[paramKey] + (1-decayRate)*np.square(grads[paramKey])
+            deltaGrad = -(eps/np.sqrt(gamma + sqrdGrad))*grads[paramKey]
+            model.params[paramKey] = params[paramKey] + deltaGrad
+            self.cache[paramKey] = sqrdGrad
         ###################################################
-        raise NotImplementedError
+        # raise NotImplementedError
 
 
 class AdamOptim(Optimizer):
@@ -225,6 +251,7 @@ class AdamOptim(Optimizer):
 
         momentums = self.momentums
         velocitys = self.velocitys
+        self.t = self.t + 1 # I added this
         t = self.t
         # create two new dictionaries containing all parameters and their gradients
         params, grads = model.params, model.grads
@@ -232,4 +259,15 @@ class AdamOptim(Optimizer):
         # TODO: Adam, Update t, momentums, velocitys and   #
         # params                                           #
         ###################################################
-        raise NotImplementedError
+        # print("Momentum keys {}".format(momentums.keys()))
+        # print("velocitys keys {}".format(velocitys.keys()))
+        for paramKey in params.keys():
+            s = beta1*momentums[paramKey] + (1-beta1)*grads[paramKey]
+            r = beta2*velocitys[paramKey] + (1-beta2)*np.square(grads[paramKey])
+            s_hat = s/(1-beta1**t)
+            r_hat = r/(1-beta2**t)
+            deltaGrad = -learning_rate*(s_hat/(np.sqrt(r_hat) + eps))# seesm like names got switched around again
+            params[paramKey] = params[paramKey] + deltaGrad
+            momentums[paramKey] = s
+            velocitys[paramKey] = r
+        # raise NotImplementedError
