@@ -27,13 +27,24 @@ def dropout_forward(x, dropout_config, mode):
         # Remember to return retention mask for   #
         # backward.                               #
         ###########################################
-        raise NotImplementedError
+        mask = np.random.rand(*x.shape)
+        mask = mask < keep_prob # if less than keep prob then keep it so you want this to be true
+        mask = mask/keep_prob # We want to keep the expected total input at test time the same
+        # as the expected total input at training time for each unit
+        out = x*mask
+        cache = mask
+        # raise NotImplementedError
     elif mode == "test":
         ##########################################
         # TODO: Implement test phase dropout. No #
         # need to use mask here.                 #
         ##########################################
-        raise NotImplementedError
+        mask = np.random.rand(*x.shape)
+        mask = mask <= 1
+        out = x.copy()
+        cache = mask
+        # raise NotImplementedError
+    # out = out.astype(x.dtype, copy=False)
     return out, cache
 
 
@@ -82,7 +93,7 @@ def bn_forward(x, gamma, beta, bn_params, mode):
     
     :return:
     - out: a tensor with the same shape as input x.
-    - cahce: (tuple) contains (x, gamma, beta, eps, mean, var)
+    - cache: (tuple) contains (x, gamma, beta, eps, mean, var)
     """
     eps = bn_params.get("epsilon", 1e-5)
     decay = bn_params.get("decay", 0.9)
@@ -102,12 +113,20 @@ def bn_forward(x, gamma, beta, bn_params, mode):
         #      4. remenber to use moving average method to update   #
         #         moving_mean and moving_var in the bn_params       #
         #############################################################
-        raise NotImplementedError
+        mean = np.mean(x, axis = 0)
+        var = np.var(x, axis = 0)
+        out = gamma*(x - mean)/np.sqrt(var + eps) + beta
+        moving_mean = decay*moving_mean + (1-decay)*mean
+        moving_var = decay*moving_var + (1-decay)*var
+        # raise NotImplementedError
     elif mode == 'test':
         #######################################################################
         # TODO: Batch normalization forward test mode                         #
         #######################################################################
-        raise NotImplementedError
+        out = gamma*(x - moving_mean)/np.sqrt(moving_var + eps) + beta
+        mean = moving_mean
+        var = moving_var
+        # raise NotImplementedError
 
     # cache for back-propagation
     cache = (x, gamma, beta, eps, mean, var)
