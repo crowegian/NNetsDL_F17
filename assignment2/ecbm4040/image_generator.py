@@ -19,8 +19,16 @@ class ImageGenerator(object):
         # TODO: Your ImageGenerator instance has to store the following information:
         # x, y, num_of_samples, height, width, number of pixels translated, degree of rotation, is_horizontal_flip,
         # is_vertical_flip, is_add_noise. By default, set boolean values to
+        self.x = x
+        self.y = y
+        self.N, self.height, self.width, _= x.shape
+        self.nPixelsTranslated = -1# not sure what default this should be
+        self.rotDegree = -1# not sure what default this should be
+        self.is_horizontal_flip = False
+        self.is_vertical_flip = False
+        self.is_add_noise = False
         # False.
-        raise NotImplementedError
+        # raise NotImplementedError
         #######################################################################
         #                                                                     #
         #                                                                     #
@@ -53,6 +61,16 @@ class ImageGenerator(object):
         #       else:
         #           shuffle(x)
         #           reset batch_count
+        totalBatches = self.N//batch_size
+        batchCount = 0
+        randIndices = np.random.randint(low = 0, high = self.N, size = self.N)
+        while True:
+            if batchCount < totalBatches:
+                batchCount += 1
+                myIndices = randIndices[batch_size*batchCount:(batch_size*(batchCount + 1))]
+                yield(self.x[myIndices,:], self.y[myIndices])
+            else:
+
         raise NotImplementedError
         #######################################################################
         #                                                                     #

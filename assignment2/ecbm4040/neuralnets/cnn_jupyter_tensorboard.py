@@ -3,6 +3,7 @@
 # Tensorboard embedding
 
 import numpy as np
+import tensorflow as tf
 from IPython.display import clear_output, Image, display, HTML
 
 

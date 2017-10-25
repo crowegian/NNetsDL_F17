@@ -151,7 +151,48 @@ def conv2d_forward(x, w, b, pad, stride):
     #                                                                     #
     #                                                                     #
     #######################################################################
-    raise NotImplementedError
+    N = x.shape[0]
+    height = x.shape[1]
+    width = x.shape[2]
+    nChannels = x.shape[3]
+
+    nFilters = w.shape[0]
+    filterHeight = w.shape[1]
+    filterWidth = w.shape[2]
+
+    newHeight = ((height - filterHeight + 2*pad)//stride) + 1
+    newWidth = ((width - filterWidth + 2*pad)//stride) + 1 
+    targetArray = np.zeros(shape = (N, newHeight, newWidth, nFilters))
+
+    xPadded = np.pad(x, pad_width = ((0,0),(pad,pad),(pad,pad), (0,0)), mode ='constant', constant_values = 0)
+    # print("x shape {}".format(x.shape))
+    # print("xpadded shape {}".format(xPadded.shape))
+    # print("target array height {}".format(targetArray.shape))
+
+    k = 0
+    l = 0
+    # print("Stride: {}\nPad: {}".format(stride, pad))
+    for i in range(0,N):
+        for j in range(0,nFilters):
+            k = 0
+            for hs in np.arange(start = 0, stop = height, step = stride):
+            # hs = k * stride 
+                l = 0
+                for ws in np.arange(start = 0, stop = width, step = stride):
+                    # ws = l * stride 
+                    # print("hs: {}\nws: {}")
+                    window = xPadded[i, hs:hs+filterHeight, ws:ws+filterWidth, :]
+                    # print("Window shape {}".format(window.shape))
+                    # print("Filter size {}".format(w[j].shape))
+                    # print(b[j])
+                    # print("i: {}\nj: {}\nk:{}\nl: {}\nws: {}\nhs: {}".format(i, j, k, l,ws, hs))
+                    # print("k:{}\nl: {}\nws: {}\nhs: {}".format(k, l,ws, hs))
+                    # print("*"*100)
+                    targetArray[i,k,l,j] = np.sum(window * w[j]) + b[j]
+                    l += 1
+                k += 1
+    return(targetArray)
+    # raise NotImplementedError
 
 
 def conv2d_backward(d_top, x, w, b, pad, stride):
