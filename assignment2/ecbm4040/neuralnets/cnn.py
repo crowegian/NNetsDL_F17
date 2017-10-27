@@ -112,7 +112,7 @@ class norm_layer(object):
 
 
 class fc_layer(object):
-    def __init__(self, input_x, in_size, out_size, rand_seed, activation_function=None, index=0):
+    def __init__(self, input_x, in_size, out_size, rand_seed, keep_prob, activation_function=None, index=0):
         """
         :param input_x: The input of the FC layer. It should be a flatten vector.
         :param in_size: The length of input vector.
@@ -124,6 +124,7 @@ class fc_layer(object):
 
         """
         with tf.variable_scope('fc_layer_%d' % index):
+            #keep_prob = tf.placeholder(tf.float32)
             with tf.name_scope('fc_kernel'):
                 w_shape = [in_size, out_size]
                 weight = tf.get_variable(name='fc_kernel_%d' % index, shape=w_shape,
@@ -138,7 +139,8 @@ class fc_layer(object):
 
             cell_out = tf.add(tf.matmul(input_x, weight), bias)
             if activation_function is not None:
-                cell_out = activation_function(cell_out)
+                cell_out_preDrop = activation_function(cell_out)
+                cell_out = tf.nn.dropout(cell_out, keep_prob)
 
             self.cell_out = cell_out
 
@@ -149,7 +151,7 @@ class fc_layer(object):
         return self.cell_out
 
 
-def my_LeNet(input_x, input_y,
+def my_LeNet(input_x, input_y, keep_prob,
           img_len=32, channel_num=3, output_size=10,
           conv_featmap=[[6, 16]], fc_units=[84],
           conv_kernel_size=[[5, 5]], pooling_size=[2, 2],
@@ -202,9 +204,11 @@ def my_LeNet(input_x, input_y,
             currChannelNum = conv_featmap[N_i][M_i]
             conv_w.append(convLayer.weight)
             layerIdx += 1
+        convLayer = norm_layer(convLayer.output())
         pooling_layer = max_pooling_layer(input_x=convLayer.output(),
                                         k_size=pooling_size[N_i],
                                         padding="VALID")
+        print("pooling layer shape {} at pool {}".format(pooling_layer.output().get_shape(), N_i))
         currInputConv = pooling_layer.output()# TODO this seems like it'll work but let's see
 
 
@@ -232,6 +236,12 @@ def my_LeNet(input_x, input_y,
     fc_w = []
     currInputFC = flatten
     currInputSize = img_vector_length
+    
+    
+    #keep_prob = tf.placeholder(tf.float32)
+    #h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+    
+    
     for idx, layerSize in enumerate(fc_units):
         if (idx + 1) == len(fc_units):
             # reached final layer so don't use an activation function
@@ -240,14 +250,17 @@ def my_LeNet(input_x, input_y,
                               out_size=output_size,
                               rand_seed=seed,
                               activation_function=None,
-                              index=idx)
+                              index=idx,
+                              keep_prob = keep_prob)
         else:
             fcLayer = fc_layer(input_x=currInputFC,
                               in_size=currInputSize,
                               out_size=layerSize,
                               rand_seed=seed,
                               activation_function=tf.nn.relu,
-                              index=idx)
+                              index=idx,
+                              keep_prob = keep_prob)
+            #fcLayer = tf.nn.dropout(fcLayer_predrop, keep_prob)
         currInputFC = fcLayer.output()
         currInputSize = layerSize
         fc_w.append(fcLayer.weight)
@@ -297,6 +310,8 @@ def cross_entropy(output, input_y):
 def train_step(loss, learning_rate=1e-3):
     with tf.name_scope('train_step'):
         step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+        #step = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(loss)
+        #step = tf.train.RMSPropOptimizer(learning_rate = learning_rate).minimize(loss)
 
     return step
 
@@ -321,7 +336,8 @@ def my_training(X_train, y_train, X_val, y_val,
              epoch=20,
              batch_size=245,
              verbose=False,
-             pre_trained_model=None):
+             pre_trained_model=None,
+             keepProbVal = 0.5):
     print("Building my LeNet. Parameters: ")
     print("conv_featmap={}".format(conv_featmap))
     print("fc_units={}".format(fc_units))
@@ -335,6 +351,7 @@ def my_training(X_train, y_train, X_val, y_val,
     with tf.name_scope('inputs'):
         xs = tf.placeholder(shape=[None, 32, 32, 3], dtype=tf.float32)
         ys = tf.placeholder(shape=[None, ], dtype=tf.int64)
+        keep_prob = tf.placeholder(tf.float32)
 
     output, loss = my_LeNet(xs, ys,
                          img_len=32,
@@ -345,7 +362,8 @@ def my_training(X_train, y_train, X_val, y_val,
                          conv_kernel_size=conv_kernel_size,
                          pooling_size=pooling_size,
                          l2_norm=l2_norm,
-                         seed=seed)
+                         seed=seed,
+                         keep_prob = keep_prob)
 
     iters = int(X_train.shape[0] / batch_size)
     print('number of batches for training: {}'.format(iters))
@@ -372,9 +390,10 @@ def my_training(X_train, y_train, X_val, y_val,
             except Exception:
                 print("Load model Failed!")
                 pass
-
+        start = time.time()
         for epc in range(epoch):
-            print("epoch {} ".format(epc + 1))
+            start = time.time()
+            print("epoch {}".format(epc + 1))
 
             for itr in range(iters):
                 iter_total += 1
@@ -382,11 +401,13 @@ def my_training(X_train, y_train, X_val, y_val,
                 training_batch_x = X_train[itr * batch_size: (1 + itr) * batch_size]
                 training_batch_y = y_train[itr * batch_size: (1 + itr) * batch_size]
 
-                _, cur_loss = sess.run([step, loss], feed_dict={xs: training_batch_x, ys: training_batch_y})
+                _, cur_loss = sess.run([step, loss], feed_dict={xs: training_batch_x, ys: training_batch_y, 
+                                                               keep_prob: keepProbVal})
 
                 if iter_total % 100 == 0:
                     # do validation
-                    valid_eve, merge_result = sess.run([eve, merge], feed_dict={xs: X_val, ys: y_val})
+                    valid_eve, merge_result = sess.run([eve, merge], feed_dict={xs: X_val, ys: y_val,
+                                                                               keep_prob: 1.0})
                     valid_acc = 100 - valid_eve * 100 / y_val.shape[0]
                     if verbose:
                         print('{}/{} loss: {} validation accuracy : {}%'.format(
@@ -403,7 +424,8 @@ def my_training(X_train, y_train, X_val, y_val,
                         print('Best validation accuracy! iteration:{} accuracy: {}%'.format(iter_total, valid_acc))
                         best_acc = valid_acc
                         saver.save(sess, 'model/{}'.format(cur_model_name))
-
+            end = time.time()
+            print("epoch time {}".format(end - start))
     print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_acc, cur_model_name))
 
 
