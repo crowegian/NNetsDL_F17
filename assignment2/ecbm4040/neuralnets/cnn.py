@@ -5,6 +5,7 @@
 import tensorflow as tf
 import numpy as np
 import time
+from ecbm4040.image_generator import ImageGenerator
 
 ####################################
 # TODO: Build your own LeNet model #
@@ -437,24 +438,147 @@ def my_training(X_train, y_train, X_val, y_val,
 
 
 
+def my_training_task4(X_train, y_train, X_val, y_val, 
+             conv_featmap=[6],
+             fc_units=[84],
+             conv_kernel_size=[5],
+             pooling_size=[2],
+             l2_norm=0.01,
+             seed=235,
+             learning_rate=1e-2,
+             epoch=20,
+             batch_size=245,
+             verbose=False,
+             pre_trained_model=None,
+             keepProbVal = 0.5):
+    print("Building my LeNet. Parameters: ")
+    print("conv_featmap={}".format(conv_featmap))
+    print("fc_units={}".format(fc_units))
+    print("conv_kernel_size={}".format(conv_kernel_size))
+    print("pooling_size={}".format(pooling_size))
+    print("l2_norm={}".format(l2_norm))
+    print("seed={}".format(seed))
+    print("learning_rate={}".format(learning_rate))
+
+    # define the variables and parameter needed during training
+    with tf.name_scope('inputs'):
+        xs = tf.placeholder(shape=[None, 32, 32, 3], dtype=tf.float32)
+        ys = tf.placeholder(shape=[None, ], dtype=tf.int64)
+        keep_prob = tf.placeholder(tf.float32)
+
+    output, loss = my_LeNet(xs, ys,
+                         img_len=32,
+                         channel_num=3,
+                         output_size=10,
+                         conv_featmap=conv_featmap,
+                         fc_units=fc_units,
+                         conv_kernel_size=conv_kernel_size,
+                         pooling_size=pooling_size,
+                         l2_norm=l2_norm,
+                         seed=seed,
+                         keep_prob = keep_prob)
+
+
+    # TODO here you should just call
+    myGenTrans = ImageGenerator(x = X_train, y = y_train)
+    myGenTrans.translate(shift_height = 3, shift_width = 3) 
+    myGenTrans = myGenTrans.next_batch_gen(batch_size = batch_size)
+
+    myGenRot = ImageGenerator(x = X_train, y = y_train)
+    myGenRot.rotate(angle = 3)
+    myGenRot = myGenRot.next_batch_gen(batch_size = batch_size)
+
+    myGenFlipH = ImageGenerator(x = X_train, y = y_train)
+    myGenFlipH.flip(mode = 'h')
+    myGenFlipH = myGenFlipH.next_batch_gen(batch_size = batch_size)
+
+    myGenFlipV = ImageGenerator(x = X_train, y = y_train)
+    myGenFlipV.flip(mode = 'v')
+    myGenFlipV = myGenFlipV.next_batch_gen(batch_size = batch_size)
+
+    myGenFlipHV = ImageGenerator(x = X_train, y = y_train)
+    myGenFlipHV.flip(mode = 'HV')
+    myGenFlipHV = myGenFlipHV.next_batch_gen(batch_size = batch_size)
+
+    myGenNoise = ImageGenerator(x = X_train, y = y_train)
+    myGenNoise.add_noise(portion = 0.5, amplitude = 0.1)
+    myGenNoise = myGenNoise.next_batch_gen(batch_size = batch_size)
+
+    myGenNone = ImageGenerator(x = X_train, y = y_train)
+    myGenNone = myGenNone.next_batch_gen(batch_size = batch_size)
+
+    generatePhaseList = [myGenNone, myGenNoise, myGenFlipHV, myGenFlipV, myGenFlipH, myGenRot, myGenTrans]
 
 
 
+    iters = int(X_train.shape[0] / batch_size)
+    print('number of batches for training: {}'.format(iters))
+
+    step = train_step(loss)
+    eve = evaluate(output, ys)
+
+    iter_total = 0
+    best_acc = 0
+    cur_model_name = 'lenet_{}'.format(int(time.time()))
+
+    with tf.Session() as sess:
+        merge = tf.summary.merge_all()
+
+        writer = tf.summary.FileWriter("log/{}".format(cur_model_name), sess.graph)
+        saver = tf.train.Saver()
+        sess.run(tf.global_variables_initializer())
+
+        # try to restore the pre_trained
+        if pre_trained_model is not None:
+            try:
+                print("Load the model from: {}".format(pre_trained_model))
+                saver.restore(sess, 'model/{}'.format(pre_trained_model))
+            except Exception:
+                print("Load model Failed!")
+                pass
+        start = time.time()
+        for epc in range(epoch):
+            start = time.time()
+            print("epoch {}".format(epc + 1))
 
 
+            for genPhase in generatePhaseList:
+                for itr in range(iters):
+                    iter_total += 1
+                    # if batchPhase == "None":
+                    training_batch_x, training_batch_y = next(genPhase)
+                    # elif batchPhase == "translate":
+                    # elif batchPhase == "rotate":
+                    # elif batchPhase == "flipH":
+                    # elif batchPhase == "flipV":
+                    # elif batchPhase == "flipHV":
+                    # elif batchPhase == "noise":
+                    # training_batch_x = X_train[itr * batch_size: (1 + itr) * batch_size]
+                    # training_batch_y = y_train[itr * batch_size: (1 + itr) * batch_size]
 
+                    _, cur_loss = sess.run([step, loss], feed_dict={xs: training_batch_x, ys: training_batch_y, 
+                                                                   keep_prob: keepProbVal})
 
+                    if iter_total % 100 == 0:
+                        # do validation
+                        valid_eve, merge_result = sess.run([eve, merge], feed_dict={xs: X_val, ys: y_val,
+                                                                                   keep_prob: 1.0})
+                        valid_acc = 100 - valid_eve * 100 / y_val.shape[0]
+                        if verbose:
+                            print('{}/{} loss: {} validation accuracy : {}%'.format(
+                                batch_size * (itr + 1),
+                                X_train.shape[0],
+                                cur_loss,
+                                valid_acc))
 
+                        # save the merge result summary
+                        writer.add_summary(merge_result, iter_total)
 
-
-
-
-
-
-
-
-
-def my_training_task4():
-    # TODO: Copy my_training function, make modifications so that it uses your
-    # data generator from task 4 to train.
-    raise NotImplementedError
+                        # when achieve the best validation accuracy, we store the model paramters
+                        if valid_acc > best_acc:
+                            print('Best validation accuracy! iteration:{} accuracy: {}%'.format(iter_total, valid_acc))
+                            best_acc = valid_acc
+                            saver.save(sess, 'model/{}'.format(cur_model_name))
+            end = time.time()
+            print("epoch time {}".format(end - start))
+    print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_acc, cur_model_name))

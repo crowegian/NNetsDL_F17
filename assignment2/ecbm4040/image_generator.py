@@ -19,11 +19,11 @@ class ImageGenerator(object):
         # TODO: Your ImageGenerator instance has to store the following information:
         # x, y, num_of_samples, height, width, number of pixels translated, degree of rotation, is_horizontal_flip,
         # is_vertical_flip, is_add_noise. By default, set boolean values to
-        self.x = x
+        self.x = np.array(x, dtype = 'float64')
         self.y = y
         self.N, self.height, self.width, _= x.shape
-        self.nPixelsTranslated = -1# not sure what default this should be
-        self.rotDegree = -1# not sure what default this should be
+        self.nPixelsTranslated = None# not sure what default this should be
+        self.rotDegree = None# not sure what default this should be
         self.is_horizontal_flip = False
         self.is_vertical_flip = False
         self.is_add_noise = False
@@ -64,14 +64,19 @@ class ImageGenerator(object):
         totalBatches = self.N//batch_size
         batchCount = 0
         randIndices = np.random.randint(low = 0, high = self.N, size = self.N)
+        randIndices = np.random.permutation(self.N)
         while True:
             if batchCount < totalBatches:
-                batchCount += 1
+                # batchCount += 1
                 myIndices = randIndices[batch_size*batchCount:(batch_size*(batchCount + 1))]
                 yield(self.x[myIndices,:], self.y[myIndices])
-            else:
-
-        raise NotImplementedError
+                batchCount += 1
+            elif shuffle:
+                print("Shuffling X\nX shape before: {}".format(self.x.shape))
+                self.x = self.x[np.random.permutation(self.N), :]# shuffle x
+                batchCount = 0
+                print("X shape after: {}".format(self.x.shape))
+        # raise NotImplementedError
         #######################################################################
         #                                                                     #
         #                                                                     #
@@ -84,7 +89,15 @@ class ImageGenerator(object):
         """
         Plot the top 16 images (index 0~15) of self.x for visualization.
         """
-        raise NotImplementedError
+        r = 4
+        f, axarr = plt.subplots(r, r, figsize=(8,8))
+        counter = 0
+        for i in range(r):
+            for j in range(r):
+                temp = self.x[counter,:]
+                counter += 1
+                img = self.x[counter,:]
+                axarr[i][j].imshow(img)
         #######################################################################
         #                                                                     #
         #                                                                     #
@@ -107,7 +120,11 @@ class ImageGenerator(object):
         # right edge of the picture.
         # Hint: Numpy.roll
         # (https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.roll.html)
-        raise NotImplementedError
+        self.x = np.roll(self.x, shift_height, axis=0)# rolls along the rows
+        self.x = np.roll(self.x, shift_width, axis=1)# rolls along the columns
+        self.nPixelsTranslated = (shift_height*self.height + shift_width*self.width)*self.N
+
+        # raise NotImplementedError
         #######################################################################
         #                                                                     #
         #                                                                     #
@@ -125,7 +142,11 @@ class ImageGenerator(object):
         """
         # TODO: Implement the rotate function. Remember to record the value of
         # rotation degree.
-        raise NotImplementedError
+        self.rotDegree = angle
+        self.x = rotate(self.x, angle = angle, axes=(0, 1), reshape=False, 
+                     output=None, order=3, mode='constant', cval=0.0, prefilter=True)
+        # This rotation isn't working correctly. Get shit for non right anlge rotatations
+        # raise NotImplementedError
         #######################################################################
         #                                                                     #
         #                                                                     #
@@ -141,7 +162,18 @@ class ImageGenerator(object):
         """
         # TODO: Implement the flip function. Remember to record the boolean values is_horizontal_flip and
         # is_vertical_flip.
-        raise NotImplementedError
+        if mode == 'h':
+            self.is_horizontal_flip = True
+            self.x = np.flipud(self.x)
+        elif mode == 'v':
+            self.is_vertical_flip = True
+            self.x = np.fliplr(self.x)
+        else:
+            self.is_vertical_flip = True
+            self.is_horizontal_flip = True
+            self.x = np.fliplr(self.x)
+            self.x = np.flipud(self.x)
+        # raise NotImplementedError
         #######################################################################
         #                                                                     #
         #                                                                     #
@@ -160,7 +192,12 @@ class ImageGenerator(object):
         # TODO: Implement the add_noise function. Remember to record the
         # boolean value is_add_noise. You can try uniform noise or Gaussian
         # noise or others ones that you think appropriate.
-        raise NotImplementedError
+        self.is_add_noise = True
+        noise = np.random.normal(0, 1, size = self.x.shape)
+        noNoiseIndices = np.random.choice(self.x.shape[0], size = int(np.round(self.x.shape[0]*(1 - portion))), replace = False)
+        noise[noNoiseIndices,:] = 0
+        self.x += noise*amplitude
+        # raise NotImplementedError
         #######################################################################
         #                                                                     #
         #                                                                     #
