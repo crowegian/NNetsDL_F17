@@ -15,25 +15,6 @@ from ecbm4040.image_generator import ImageGenerator
 ####################################
 
 
-def my_LeNet(input_x, input_y):
-    raise NotImplementedError
-
-####################################
-#        End of your code          #
-####################################
-
-##########################################
-# TODO: Build your own training function #
-##########################################
-
-
-def my_training(X_train, y_train, X_val, y_val):
-
-    raise NotImplementedError
-##########################################
-#            End of your code            #
-##########################################
-
 
 
 
@@ -156,7 +137,7 @@ class fc_layer(object):
 
 
 def my_LeNet(input_x, input_y, keep_prob,
-          img_len=32, channel_num=3, output_size=10,
+          img_len=32, channel_num=3, output_size=5,
           conv_featmap=[[6, 16]], fc_units=[84],
           conv_kernel_size=[[5, 5]], pooling_size=[2, 2],
           l2_norm=0.01, seed=235):
@@ -292,7 +273,7 @@ def my_LeNet(input_x, input_y, keep_prob,
         l2_loss = tf.reduce_sum([tf.norm(w) for w in fc_w])
         l2_loss += tf.reduce_sum([tf.norm(w, axis=[-2, -1]) for w in conv_w])
 
-        label = tf.one_hot(input_y, 10)
+        label = tf.one_hot(input_y, output_size)
         cross_entropy_loss = tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=fcLayer.output()),
             name='cross_entropy')
@@ -303,9 +284,9 @@ def my_LeNet(input_x, input_y, keep_prob,
     return fcLayer.output(), loss
 
 
-def cross_entropy(output, input_y):
+def cross_entropy(output, input_y, nclasses = 5):
     with tf.name_scope('cross_entropy'):
-        label = tf.one_hot(input_y, 10)
+        label = tf.one_hot(input_y, nclasses)
         ce = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=output))
 
     return ce
@@ -329,7 +310,7 @@ def evaluate(output, input_y):
 
 
 # training function for the LeNet model
-def my_training(X_train, y_train, X_val, y_val, 
+def my_training(X_train, y_train, X_val, y_val, outputSize, 
              conv_featmap=[6],
              fc_units=[84],
              conv_kernel_size=[5],
@@ -341,7 +322,8 @@ def my_training(X_train, y_train, X_val, y_val,
              batch_size=245,
              verbose=False,
              pre_trained_model=None,
-             keepProbVal = 0.5):
+             keepProbVal = 0.5,
+             imageReshapeSize = 64):
     print("Building my LeNet. Parameters: ")
     print("conv_featmap={}".format(conv_featmap))
     print("fc_units={}".format(fc_units))
@@ -353,14 +335,14 @@ def my_training(X_train, y_train, X_val, y_val,
 
     # define the variables and parameter needed during training
     with tf.name_scope('inputs'):
-        xs = tf.placeholder(shape=[None, 32, 32, 3], dtype=tf.float32)
+        xs = tf.placeholder(shape=[None,imageReshapeSize,imageReshapeSize, 3], dtype=tf.float32)
         ys = tf.placeholder(shape=[None, ], dtype=tf.int64)
         keep_prob = tf.placeholder(tf.float32)
-
+    #print("input shapes after resizing: {}".format(X_train.shape))
     output, loss = my_LeNet(xs, ys,
-                         img_len=32,
+                         img_len=X_train.shape[1],
                          channel_num=3,
-                         output_size=5,
+                         output_size=outputSize,
                          conv_featmap=conv_featmap,
                          fc_units=fc_units,
                          conv_kernel_size=conv_kernel_size,
@@ -385,7 +367,8 @@ def my_training(X_train, y_train, X_val, y_val,
         writer = tf.summary.FileWriter("log/{}".format(cur_model_name), sess.graph)
         saver = tf.train.Saver()
         sess.run(tf.global_variables_initializer())
-
+        X_val = tf.image.resize_images(X_val, [imageReshapeSize, imageReshapeSize])
+        X_val = X_val.eval(session=sess)
         # try to restore the pre_trained
         if pre_trained_model is not None:
             try:
@@ -404,7 +387,8 @@ def my_training(X_train, y_train, X_val, y_val,
 
                 training_batch_x = X_train[itr * batch_size: (1 + itr) * batch_size]
                 training_batch_y = y_train[itr * batch_size: (1 + itr) * batch_size]
-
+                training_batch_x = tf.image.resize_images(training_batch_x, [imageReshapeSize, imageReshapeSize])
+                training_batch_x = training_batch_x.eval(session = sess)
                 _, cur_loss = sess.run([step, loss], feed_dict={xs: training_batch_x, ys: training_batch_y, 
                                                                keep_prob: keepProbVal})
 
@@ -441,7 +425,7 @@ def my_training(X_train, y_train, X_val, y_val,
 
 
 
-def my_training_task4(X_train, y_train, X_val, y_val, 
+def my_training_task4(X_train, y_train, X_val, y_val, outputSize,
              conv_featmap=[6],
              fc_units=[84],
              conv_kernel_size=[5],
@@ -472,7 +456,7 @@ def my_training_task4(X_train, y_train, X_val, y_val,
     output, loss = my_LeNet(xs, ys,
                          img_len=32,
                          channel_num=3,
-                         output_size=10,
+                         output_size=outputSize,
                          conv_featmap=conv_featmap,
                          fc_units=fc_units,
                          conv_kernel_size=conv_kernel_size,
@@ -522,7 +506,7 @@ def my_training_task4(X_train, y_train, X_val, y_val,
 
     iter_total = 0
     best_acc = 0
-    cur_model_name = 'lenet_{}'.format(int(time.time()))
+    cur_model_name = 'kaggle_lenet_{}'.format(int(time.time()))
 
     with tf.Session() as sess:
         merge = tf.summary.merge_all()
