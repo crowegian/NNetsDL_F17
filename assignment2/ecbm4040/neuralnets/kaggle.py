@@ -291,6 +291,12 @@ def cross_entropy(output, input_y, nclasses = 5):
 
     return ce
 
+def prediction(output):
+    with tf.name_scope("myPrediction"):
+        preds = tf.nn.softmax(output)
+    return(preds)
+                       
+
 
 def train_step(loss, learning_rate=1e-3):
     with tf.name_scope('train_step'):
@@ -322,8 +328,7 @@ def my_training(X_train, y_train, X_val, y_val, outputSize,
              batch_size=245,
              verbose=False,
              pre_trained_model=None,
-             keepProbVal = 0.5,
-             imageReshapeSize = 64):
+             keepProbVal = 0.5):
     print("Building my LeNet. Parameters: ")
     print("conv_featmap={}".format(conv_featmap))
     print("fc_units={}".format(fc_units))
@@ -335,7 +340,7 @@ def my_training(X_train, y_train, X_val, y_val, outputSize,
 
     # define the variables and parameter needed during training
     with tf.name_scope('inputs'):
-        xs = tf.placeholder(shape=[None,imageReshapeSize,imageReshapeSize, 3], dtype=tf.float32)
+        xs = tf.placeholder(shape=[None,X_train.shape[1],X_train.shape[2], 3], dtype=tf.float32)
         ys = tf.placeholder(shape=[None, ], dtype=tf.int64)
         keep_prob = tf.placeholder(tf.float32)
     #print("input shapes after resizing: {}".format(X_train.shape))
@@ -359,7 +364,7 @@ def my_training(X_train, y_train, X_val, y_val, outputSize,
 
     iter_total = 0
     best_acc = 0
-    cur_model_name = 'lenet_{}'.format(int(time.time()))
+    cur_model_name = 'kaggleModel_{}'.format(int(time.time()))
 
     with tf.Session() as sess:
         merge = tf.summary.merge_all()
@@ -367,8 +372,8 @@ def my_training(X_train, y_train, X_val, y_val, outputSize,
         writer = tf.summary.FileWriter("log/{}".format(cur_model_name), sess.graph)
         saver = tf.train.Saver()
         sess.run(tf.global_variables_initializer())
-        X_val = tf.image.resize_images(X_val, [imageReshapeSize, imageReshapeSize])
-        X_val = X_val.eval(session=sess)
+        #X_val = tf.image.resize_images(X_val, [imageReshapeSize, imageReshapeSize])
+        #X_val = X_val.eval(session=sess)
         # try to restore the pre_trained
         if pre_trained_model is not None:
             try:
@@ -387,8 +392,8 @@ def my_training(X_train, y_train, X_val, y_val, outputSize,
 
                 training_batch_x = X_train[itr * batch_size: (1 + itr) * batch_size]
                 training_batch_y = y_train[itr * batch_size: (1 + itr) * batch_size]
-                training_batch_x = tf.image.resize_images(training_batch_x, [imageReshapeSize, imageReshapeSize])
-                training_batch_x = training_batch_x.eval(session = sess)
+                #training_batch_x = tf.image.resize_images(training_batch_x, [imageReshapeSize, imageReshapeSize])
+                #training_batch_x = training_batch_x.eval(session = sess)
                 _, cur_loss = sess.run([step, loss], feed_dict={xs: training_batch_x, ys: training_batch_y, 
                                                                keep_prob: keepProbVal})
 
