@@ -1,2 +1,3 @@
-model_checkpoint_path: "lenet_1509492956"
-all_model_checkpoint_paths: "lenet_1509492956"
+model_checkpoint_path: "kaggleModel_1509637193"
+all_model_checkpoint_paths: "../myCheckPoints/kaggleModel_1509637193.ckpt"
+all_model_checkpoint_paths: "kaggleModel_1509637193"
