@@ -1,0 +1,3 @@
+model_checkpoint_path: "kaggleModel_1509633394.ckpt"
+all_model_checkpoint_paths: "../model/kaggleModel_1509633394"
+all_model_checkpoint_paths: "kaggleModel_1509633394.ckpt"

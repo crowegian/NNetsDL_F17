@@ -47,6 +47,7 @@ class conv_layer(object):
 
             # strides [1, x_movement, y_movement, 1]
             conv_out = tf.nn.conv2d(input_x, weight, strides=[1, 1, 1, 1], padding="SAME")
+            conv_out = norm_layer(conv_out).output()
             cell_out = tf.nn.relu(conv_out + bias)
 
             self.cell_out = cell_out
@@ -123,6 +124,7 @@ class fc_layer(object):
                 self.bias = bias
 
             cell_out = tf.add(tf.matmul(input_x, weight), bias)
+            cell_out = norm_layer(cell_out).output()
             if activation_function is not None:
                 cell_out_preDrop = activation_function(cell_out)
                 cell_out = tf.nn.dropout(cell_out, keep_prob)
@@ -189,7 +191,7 @@ def my_LeNet(input_x, input_y, keep_prob,
             currChannelNum = conv_featmap[N_i][M_i]
             conv_w.append(convLayer.weight)
             layerIdx += 1
-        convLayer = norm_layer(convLayer.output())
+        #convLayer = norm_layer(convLayer.output())
         pooling_layer = max_pooling_layer(input_x=convLayer.output(),
                                         k_size=pooling_size[N_i],
                                         padding="VALID")
@@ -294,6 +296,7 @@ def cross_entropy(output, input_y, nclasses = 5):
 def prediction(output):
     with tf.name_scope("myPrediction"):
         preds = tf.nn.softmax(output)
+        preds = pred = tf.argmax(output, axis=1)
     return(preds)
                        
 
@@ -309,7 +312,7 @@ def train_step(loss, learning_rate=1e-3):
 
 def evaluate(output, input_y):
     with tf.name_scope('evaluate'):
-        pred = tf.argmax(output, axis=1)
+        pred = tf.argmax(tf.nn.softmax(output), axis=1)
         error_num = tf.count_nonzero(pred - input_y, name='error_num')
         tf.summary.scalar('LeNet_error_num', error_num)
     return error_num
@@ -417,6 +420,7 @@ def my_training(X_train, y_train, X_val, y_val, outputSize,
                         print('Best validation accuracy! iteration:{} accuracy: {}%'.format(iter_total, valid_acc))
                         best_acc = valid_acc
                         saver.save(sess, 'model/{}'.format(cur_model_name))
+                        saver.save(sess, 'myCheckPoints/{}.ckpt'.format(cur_model_name))
             end = time.time()
             print("epoch time {}".format(end - start))
     print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_acc, cur_model_name))
