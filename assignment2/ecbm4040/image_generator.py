@@ -19,7 +19,7 @@ class ImageGenerator(object):
         # TODO: Your ImageGenerator instance has to store the following information:
         # x, y, num_of_samples, height, width, number of pixels translated, degree of rotation, is_horizontal_flip,
         # is_vertical_flip, is_add_noise. By default, set boolean values to
-        self.x = np.array(x, dtype = 'float64')
+        self.x = np.copy(x)#np.array(x, dtype = 'float64')
         self.y = y
         self.N, self.height, self.width, _= x.shape
         self.nPixelsTranslated = None# not sure what default this should be
@@ -62,6 +62,7 @@ class ImageGenerator(object):
         #           shuffle(x)
         #           reset batch_count
         totalBatches = self.N//batch_size
+        #print("total batches {}".format(totalBatches))
         batchCount = 0
         randIndices = np.random.randint(low = 0, high = self.N, size = self.N)
         randIndices = np.random.permutation(self.N)
@@ -71,11 +72,14 @@ class ImageGenerator(object):
                 myIndices = randIndices[batch_size*batchCount:(batch_size*(batchCount + 1))]
                 yield(self.x[myIndices,:], self.y[myIndices])
                 batchCount += 1
-            elif shuffle:
-                print("Shuffling X\nX shape before: {}".format(self.x.shape))
-                self.x = self.x[np.random.permutation(self.N), :]# shuffle x
+            else:
+                if shuffle:
+                    #print("Shuffling X\nX shape before: {}".format(self.x.shape))
+                    myShuffle = np.random.permutation(self.N)
+                    self.x = self.x[myShuffle, :]# shuffle x
+                    self.y = self.y[myShuffle]
                 batchCount = 0
-                print("X shape after: {}".format(self.x.shape))
+                #print("X shape after: {}".format(self.x.shape))
         # raise NotImplementedError
         #######################################################################
         #                                                                     #
@@ -89,6 +93,12 @@ class ImageGenerator(object):
         """
         Plot the top 16 images (index 0~15) of self.x for visualization.
         """
+        
+      
+        
+        
+        
+        
         r = 4
         f, axarr = plt.subplots(r, r, figsize=(8,8))
         counter = 0
@@ -195,8 +205,14 @@ class ImageGenerator(object):
         self.is_add_noise = True
         noise = np.random.normal(0, 1, size = self.x.shape)
         noNoiseIndices = np.random.choice(self.x.shape[0], size = int(np.round(self.x.shape[0]*(1 - portion))), replace = False)
+        noise = (noise*amplitude).astype(np.uint8)
         noise[noNoiseIndices,:] = 0
-        self.x += noise*amplitude
+        self.x += noise
+        self.x = np.clip(self.x, 0, 255, out=self.x)
+        
+        
+        
+        
         # raise NotImplementedError
         #######################################################################
         #                                                                     #
