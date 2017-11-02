@@ -73,11 +73,11 @@ def svm_loss_vectorized(W, X, y, reg):
     loss = 1 + predictedClassScores - correctClassScores
     loss[loss < 0] = 0 # want margin to be greater than 0 if counting
     lossMat = loss
-    loss[np.arange(0, predictedClassScores.shape[0]), y] = 0 # not counting the y_i
+    loss[np.arange(0, predictedClassScores.shape[0]), y] = 0 # not counting the y_i class
     loss = np.sum(loss)
     loss = loss/X.shape[0]
 
-    loss += reg * np.sum(W * W)
+    loss += reg*np.sum(W*W)
 
         
     #############################################################################

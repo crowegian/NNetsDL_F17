@@ -59,7 +59,7 @@ def softmax_loss_naive(W, X, y, reg):
     loss = loss + 0.5*reg*np.sum(W*W)
 
     # Add regularization to the gradient
-    dW += reg * W
+    dW = dw + reg*W
 
     
     #############################################################################
@@ -96,9 +96,12 @@ def softmax_loss_vectorized(W, X, y, reg):
     scoresDenom = np.sum(scores, axis = 1) # sum of scores along observations
     loss = -np.log(((scores.T)/scoresDenom).T)
     loss = loss[np.arange(0,n), y]
-    loss = np.sum(loss)/n + 0.5 * reg * np.sum(W*W)
+    loss = np.sum(loss)/n + 0.5*reg*np.sum(W*W)
     # print(loss)
-    # print('loss^')
+
+
+
+
 
     dW = ((scores.T)/scoresDenom).T
     # print(dW.shape)
