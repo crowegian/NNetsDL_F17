@@ -133,6 +133,12 @@ class MyLSTMCell(RNNCell):
         #   self._w_i_diag = None
         #   self._w_o_diag = None
         # raise NotImplementedError('Please edit this function.')
+
+
+
+
+
+        (c_prev, m_prev) = state
         if self.linear1 is None:
           scope = tf.get_variable_scope()
           with tf.variable_scope(
